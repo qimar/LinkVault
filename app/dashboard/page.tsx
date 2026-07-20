@@ -245,12 +245,15 @@ export default function Dashboard() {
       {/* Dashboard particle effects — rendered behind all content */}
       {profile.particle_effect === "stars" && <BackgroundPixelStars />}
       {profile.particle_effect === "space" && (
-        <Particles
-          color="#ffffff"
-          particleCount={8000}
-          particleSize={20}
-          animate={true}
-        />
+        <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+          <Particles
+            color="#ffffff"
+            particleCount={8000}
+            particleSize={20}
+            animate={true}
+            className="z-0"
+          />
+        </div>
       )}
       {/* DYNAMIC CSS INJECTION */}
       <style dangerouslySetInnerHTML={{__html: `
