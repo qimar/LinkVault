@@ -58,7 +58,8 @@ export function LinkForm({
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-accent text-white px-6 py-3 rounded-xl font-bold hover:bg-violet-600 disabled:opacity-50 transition-all shadow-[0_0_15px_rgba(139,92,246,0.2)] hover:shadow-[0_0_25px_rgba(139,92,246,0.4)] cursor-pointer"
+            className="flex-1 bg-[var(--accent)] px-6 py-3 rounded-xl font-bold disabled:opacity-50 transition-all shadow-[0_0_15px_var(--accent-glow)] hover:opacity-90 hover:shadow-[0_0_25px_var(--accent-glow)] cursor-pointer"
+            style={{ color: 'var(--btn-text)' }}
           >
             {loading ? "Saving..." : initialData ? "Update Link" : "Add Link"}
           </button>
