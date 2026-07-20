@@ -11,6 +11,8 @@ export type Profile = {
   particle_effect: string | null
   custom_cursor: string | null
   audio_url: string | null
+  audio_title: string | null
+  audio_image: string | null
   stripe_account_id: string | null
   views: number | null
   created_at: string

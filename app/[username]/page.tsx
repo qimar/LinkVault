@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase"
 import { notFound } from "next/navigation"
 import { getIconForUrl } from "@/components/social-icons"
-import { SpotifyPlayer } from "@/components/spotify-player"
+import { MediaPlayer } from "@/components/media-player"
 
 type Props = {
   params: Promise<{ username: string }>
@@ -150,8 +150,13 @@ export default async function PublicProfile({ params }: Props) {
           ))}
         </div>
 
-        {profile.audio_url && profile.audio_url.includes("spotify.com") && (
-          <SpotifyPlayer audioUrl={profile.audio_url} />
+        {profile.audio_url && (
+          <MediaPlayer
+            audioUrl={profile.audio_url}
+            audioTitle={profile.audio_title}
+            audioImage={profile.audio_image}
+            accentColor={themeColor}
+          />
         )}
       </div>
       

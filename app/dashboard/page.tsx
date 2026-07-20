@@ -1,7 +1,7 @@
 "use client"
 
 import { useSession, signOut } from "next-auth/react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { SortableList } from "@/components/sortable-list"
 import { LinkForm } from "@/components/link-form"
@@ -30,6 +30,8 @@ export default function Dashboard() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [usernameInput, setUsernameInput] = useState("")
   const [activeTab, setActiveTab] = useState<"links" | "appearance" | "analytics" | "monetize">("links")
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const avatarFileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/")
@@ -141,6 +143,28 @@ export default function Dashboard() {
     const { error } = await updateAppearanceAction(profile.id, updates)
     if (error) {
       alert("Failed to save appearance: " + error)
+    }
+  }
+
+  const handleAvatarFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !profile) return
+    setUploadingAvatar(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      const res = await fetch("/api/upload-avatar", { method: "POST", body: formData })
+      const json = await res.json()
+      if (json.error) {
+        alert("Upload failed: " + json.error)
+      } else if (json.url) {
+        await handleUpdateAppearance({ avatar_url: json.url })
+      }
+    } catch (err: any) {
+      alert("Upload failed: " + err.message)
+    } finally {
+      setUploadingAvatar(false)
+      if (avatarFileRef.current) avatarFileRef.current.value = ""
     }
   }
 
@@ -346,9 +370,9 @@ export default function Dashboard() {
                   {/* Profile Identity */}
                   <div className="pb-6 border-b border-zinc-800">
                     <h3 className="text-sm font-semibold text-zinc-300 mb-4">Profile Identity</h3>
-                    <div className="flex items-center gap-6">
-                      {/* Avatar preview */}
-                      <div className="relative flex-shrink-0">
+                    <div className="flex items-start gap-6">
+                      {/* Avatar preview + upload */}
+                      <div className="flex flex-col items-center gap-3 flex-shrink-0">
                         {profile.avatar_url ? (
                           <img
                             src={profile.avatar_url}
@@ -361,15 +385,40 @@ export default function Dashboard() {
                             {profile.display_name?.[0]?.toUpperCase() || "?"}
                           </div>
                         )}
-                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[var(--accent)] rounded-full flex items-center justify-center shadow-lg">
-                          <svg className="w-3 h-3" style={{ color: 'var(--btn-text)' }} fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                          </svg>
-                        </div>
+                        {/* Hidden file input */}
+                        <input
+                          ref={avatarFileRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/gif"
+                          className="hidden"
+                          onChange={handleAvatarFileUpload}
+                        />
+                        <button
+                          onClick={() => avatarFileRef.current?.click()}
+                          disabled={uploadingAvatar}
+                          className="text-xs px-3 py-1.5 rounded-lg font-semibold transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5 border border-[var(--accent)] hover:bg-[var(--accent)]/10"
+                          style={{ color: 'var(--accent)' }}
+                        >
+                          {uploadingAvatar ? (
+                            <>
+                              <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                              Uploading...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                              </svg>
+                              Upload Photo
+                            </>
+                          )}
+                        </button>
                       </div>
 
                       <div className="flex-1 space-y-3">
-                        {/* Display Name */}
                         <div>
                           <label className="block text-xs font-semibold text-zinc-400 mb-1">Display Name</label>
                           <input
@@ -380,7 +429,6 @@ export default function Dashboard() {
                             placeholder="Your Name"
                           />
                         </div>
-                        {/* Bio */}
                         <div>
                           <label className="block text-xs font-semibold text-zinc-400 mb-1">Bio</label>
                           <input
@@ -391,9 +439,8 @@ export default function Dashboard() {
                             placeholder="A short bio..."
                           />
                         </div>
-                        {/* Avatar URL */}
                         <div>
-                          <label className="block text-xs font-semibold text-zinc-400 mb-1">Profile Picture URL</label>
+                          <label className="block text-xs font-semibold text-zinc-400 mb-1">Or paste a Picture URL</label>
                           <input
                             type="url"
                             value={profile.avatar_url || ""}
@@ -455,16 +502,39 @@ export default function Dashboard() {
                     </div>
                   </div>
                   
-                  {/* Custom Audio */}
-                  <div className="pt-4 border-t border-zinc-800">
-                    <label className="block text-sm font-semibold text-zinc-300 mb-2">Background Audio URL (Optional)</label>
+                  {/* Background Audio */}
+                  <div className="pt-4 border-t border-zinc-800 space-y-3">
+                    <label className="block text-sm font-semibold text-zinc-300">Background Audio / Media</label>
+                    <p className="text-xs text-zinc-500">Supports YouTube, SoundCloud, Spotify, or any direct MP3/audio link</p>
                     <input
                       type="url"
                       value={profile.audio_url || ""}
                       onChange={e => handleUpdateAppearance({ audio_url: e.target.value })}
                       className="w-full px-4 py-3 bg-zinc-900/50 border border-zinc-700 rounded-xl focus:ring-2 focus:ring-[var(--accent)] outline-none text-white placeholder-zinc-600 transition-shadow"
-                      placeholder="Spotify track link (e.g. https://open.spotify.com/track/...)"
+                      placeholder="YouTube / SoundCloud / Spotify / direct .mp3 URL"
                     />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-400 mb-1">Player Title (for MP3)</label>
+                        <input
+                          type="text"
+                          value={profile.audio_title || ""}
+                          onChange={e => handleUpdateAppearance({ audio_title: e.target.value })}
+                          className="w-full px-3 py-2 bg-zinc-900/50 border border-zinc-700 rounded-xl focus:ring-2 focus:ring-[var(--accent)] outline-none text-white placeholder-zinc-600 transition-shadow text-sm"
+                          placeholder="Song title..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-400 mb-1">Album Art URL (for MP3)</label>
+                        <input
+                          type="url"
+                          value={profile.audio_image || ""}
+                          onChange={e => handleUpdateAppearance({ audio_image: e.target.value })}
+                          className="w-full px-3 py-2 bg-zinc-900/50 border border-zinc-700 rounded-xl focus:ring-2 focus:ring-[var(--accent)] outline-none text-white placeholder-zinc-600 transition-shadow text-sm"
+                          placeholder="https://..."
+                        />
+                      </div>
+                    </div>
                   </div>
 
                 </div>
