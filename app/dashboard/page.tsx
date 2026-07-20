@@ -245,7 +245,7 @@ export default function Dashboard() {
       {/* Dashboard particle effects — rendered behind all content */}
       {profile.particle_effect === "stars" && <BackgroundPixelStars />}
       {profile.particle_effect === "space" && (
-        <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="fixed inset-0 z-[1] overflow-hidden pointer-events-none">
           <Particles
             color="#ffffff"
             particleCount={8000}
@@ -290,7 +290,7 @@ export default function Dashboard() {
         </div>
       </nav>
 
-      <main className="max-w-4xl mx-auto p-4 mt-12">
+      <main className="max-w-4xl mx-auto p-4 mt-12 relative z-10">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
