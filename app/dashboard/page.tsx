@@ -40,9 +40,15 @@ export default function Dashboard() {
         .eq("user_id", userId)
         .single()
 
-      if (error && error.code === 'PGRST116') {
-        // No profile found, show creation screen
-        setLoading(false)
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No profile found, show creation screen
+          setLoading(false)
+        } else {
+          console.error("Supabase error:", error)
+          alert("Database error: " + error.message)
+          setLoading(false)
+        }
         return
       }
 
