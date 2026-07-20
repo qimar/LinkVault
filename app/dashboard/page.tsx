@@ -21,9 +21,13 @@ import { LogOut, ExternalLink, Plus, PaintBucket, Link2, BarChart3, DollarSign, 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import dynamic from "next/dynamic"
 
-// Dynamically import the heavy canvas component to avoid SSR issues
+// Dynamically import the heavy canvas components to avoid SSR issues
 const BackgroundPixelStars = dynamic(
   () => import("@/components/background-pixel-stars").then(m => ({ default: m.BackgroundPixelStars })),
+  { ssr: false }
+)
+const Particles = dynamic(
+  () => import("@/components/particles").then(m => ({ default: m.Particles })),
   { ssr: false }
 )
 
@@ -240,6 +244,14 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background pb-32 relative overflow-hidden">
       {/* Dashboard particle effects — rendered behind all content */}
       {profile.particle_effect === "stars" && <BackgroundPixelStars />}
+      {profile.particle_effect === "space" && (
+        <Particles
+          color="#ffffff"
+          particleCount={8000}
+          particleSize={20}
+          animate={true}
+        />
+      )}
       {/* DYNAMIC CSS INJECTION */}
       <style dangerouslySetInnerHTML={{__html: `
         :root {
@@ -487,7 +499,7 @@ export default function Dashboard() {
                       {[
                         { id: "none", label: "None", icon: "✕" },
                         { id: "stars", label: "Pixel Stars", icon: "✦" },
-                        { id: "snow", label: "Snow", icon: "❄" },
+                        { id: "space", label: "Space", icon: "🌌" },
                       ].map(effect => (
                         <button
                           key={effect.id}
