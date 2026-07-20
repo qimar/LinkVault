@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 import { notFound } from "next/navigation"
 import { getIconForUrl } from "@/components/social-icons"
 import { MediaPlayer } from "@/components/media-player"
@@ -15,7 +15,7 @@ export default async function PublicProfile({ params }: Props) {
   let links: any[] = []
   
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("profiles")
       .select("*")
       .eq("username", resolvedParams.username)
@@ -24,7 +24,7 @@ export default async function PublicProfile({ params }: Props) {
     if (error || !data) throw new Error("Not found")
     profile = data
 
-    const { data: linksData } = await supabase
+    const { data: linksData } = await supabaseAdmin
       .from("links")
       .select("*")
       .eq("profile_id", profile.id)
@@ -61,13 +61,15 @@ export default async function PublicProfile({ params }: Props) {
   try {
     if (profile.id !== "mock-id") {
       // In a real app we'd debounce this or use redis, but this works for our scale
-      await supabase.rpc('increment_views', { profile_uuid: profile.id })
+      await supabaseAdmin.rpc('increment_views', { profile_uuid: profile.id })
     }
   } catch (e) {
     console.error("Failed to increment view count", e)
   }
 
-  const themeColor = profile.theme_color || "#8b5cf6"
+  // Secondary XSS Mitigation: Sanitize theme color
+  const rawColor = profile.theme_color || "#8b5cf6"
+  const themeColor = /^#[0-9A-Fa-f]{3,8}$/.test(rawColor) ? rawColor : "#8b5cf6"
   
   return (
     <div 

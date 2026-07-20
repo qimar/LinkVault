@@ -1,11 +1,52 @@
 import { NextRequest, NextResponse } from "next/server"
+import { rateLimit } from "@/lib/rate-limit"
 
 // Direct image extensions — return the URL as-is
 const IMAGE_EXTS = /\.(jpg|jpeg|png|webp|gif|svg|avif|bmp)(\?.*)?$/i
 
+// Block private IP ranges and localhost to prevent SSRF
+function isSafeUrl(urlString: string) {
+  try {
+    const parsed = new URL(urlString)
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false
+    
+    const hostname = parsed.hostname.toLowerCase()
+    
+    // Basic SSRF blocks (localhost, private IP ranges)
+    if (
+      hostname === "localhost" ||
+      hostname.endsWith(".internal") ||
+      hostname.endsWith(".local") ||
+      hostname === "127.0.0.1" ||
+      hostname === "::1" ||
+      hostname === "169.254.169.254" || // AWS metadata
+      hostname.startsWith("10.") ||
+      hostname.startsWith("192.168.") ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname)
+    ) {
+      return false
+    }
+    
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function GET(req: NextRequest) {
+  // Rate limiting by IP
+  const ip = req.headers.get("x-forwarded-for") || "unknown"
+  const { success } = await rateLimit.limit(`resolve-image_${ip}`)
+  if (!success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 })
+  }
+
   const url = req.nextUrl.searchParams.get("url")
   if (!url) return NextResponse.json({ error: "No URL provided" }, { status: 400 })
+
+  if (!isSafeUrl(url)) {
+    return NextResponse.json({ error: "Invalid or unsafe URL" }, { status: 400 })
+  }
 
   // If it's already a direct image link, just pass it through
   try {

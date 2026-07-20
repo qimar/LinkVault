@@ -1,5 +1,6 @@
-import { supabase } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 import { NextResponse } from "next/server"
+import { rateLimit } from "@/lib/rate-limit"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -10,25 +11,30 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
-  // Log the click — fetch profile_id from the link first
-  // so the clicks table FK constraint doesn't reject the insert
-  try {
-    const { data: linkData } = await supabase
-      .from('links')
-      .select('profile_id')
-      .eq('id', linkId)
-      .single()
+  // Rate limit click tracking to prevent DB spam
+  const ip = request.headers.get("x-forwarded-for") || "unknown"
+  const { success } = await rateLimit.limit(`click_${ip}`)
 
-    if (linkData?.profile_id) {
-      await supabase.from('clicks').insert({
-        link_id: linkId,
-        profile_id: linkData.profile_id,
-      })
+  // Only log the click if they haven't exceeded the rate limit
+  if (success) {
+    try {
+      const { data: linkData } = await supabaseAdmin
+        .from('links')
+        .select('profile_id')
+        .eq('id', linkId)
+        .single()
+
+      if (linkData?.profile_id) {
+        await supabaseAdmin.from('clicks').insert({
+          link_id: linkId,
+          profile_id: linkData.profile_id,
+        })
+      }
+    } catch (error) {
+      console.error("Failed to log click:", error)
     }
-  } catch (error) {
-    console.error("Failed to log click:", error)
   }
 
-  // Always redirect even if click logging fails
+  // Always redirect to destination even if click logging fails or is rate limited
   return NextResponse.redirect(url)
 }
