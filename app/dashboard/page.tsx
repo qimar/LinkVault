@@ -19,6 +19,13 @@ import {
 import { motion, AnimatePresence } from "framer-motion"
 import { LogOut, ExternalLink, Plus, PaintBucket, Link2, BarChart3, DollarSign, Clock } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import dynamic from "next/dynamic"
+
+// Dynamically import the heavy canvas component to avoid SSR issues
+const BackgroundPixelStars = dynamic(
+  () => import("@/components/background-pixel-stars").then(m => ({ default: m.BackgroundPixelStars })),
+  { ssr: false }
+)
 
 export default function Dashboard() {
   const { data: session, status } = useSession()
@@ -230,7 +237,9 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background pb-32 relative overflow-hidden">
+      {/* Dashboard particle effects — rendered behind all content */}
+      {profile.particle_effect === "stars" && <BackgroundPixelStars />}
       {/* DYNAMIC CSS INJECTION */}
       <style dangerouslySetInnerHTML={{__html: `
         :root {
@@ -472,22 +481,28 @@ export default function Dashboard() {
                   </div>
 
                   <div className="pt-4 border-t border-zinc-800">
-                    <label className="block text-sm font-semibold text-zinc-300 mb-3">Particle Effects</label>
+                    <label className="block text-sm font-semibold text-zinc-300 mb-1">Dashboard Background Effect</label>
+                    <p className="text-xs text-zinc-500 mb-3">Choose an animated effect that appears behind your dashboard.</p>
                     <div className="grid grid-cols-3 gap-4">
-                      {["none", "stars", "snow"].map(effect => (
+                      {[
+                        { id: "none", label: "None", icon: "✕" },
+                        { id: "stars", label: "Pixel Stars", icon: "✦" },
+                        { id: "snow", label: "Snow", icon: "❄" },
+                      ].map(effect => (
                         <button
-                          key={effect}
-                          onClick={() => handleUpdateAppearance({ particle_effect: effect })}
-                          className={`py-3 px-4 rounded-xl font-bold cursor-pointer transition-all ${
-                            profile.particle_effect === effect 
+                          key={effect.id}
+                          onClick={() => handleUpdateAppearance({ particle_effect: effect.id })}
+                          className={`py-3 px-4 rounded-xl font-bold cursor-pointer transition-all flex flex-col items-center gap-1 ${
+                            profile.particle_effect === effect.id 
                               ? profile.theme_color === "#ffffff" 
                                 ? "bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.5)]" 
                                 : "bg-[var(--accent)] shadow-[0_0_15px_var(--accent-glow)]" 
-                              : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800"
+                              : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-white"
                           }`}
-                          style={profile.particle_effect === effect ? { color: 'var(--btn-text)' } : {}}
+                          style={profile.particle_effect === effect.id ? { color: 'var(--btn-text)' } : {}}
                         >
-                          {effect.charAt(0).toUpperCase() + effect.slice(1)}
+                          <span className="text-lg">{effect.icon}</span>
+                          <span className="text-xs">{effect.label}</span>
                         </button>
                       ))}
                     </div>

@@ -10,8 +10,6 @@ export const metadata: Metadata = {
   description: "Your personalized link in bio",
 }
 
-import { MouseGlow } from "@/components/mouse-glow"
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -20,7 +18,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body suppressHydrationWarning className={`${inter.className} bg-[var(--background)] min-h-screen text-[var(--foreground)]`}>
-        <MouseGlow />
         <Provider>{children}</Provider>
       </body>
     </html>
