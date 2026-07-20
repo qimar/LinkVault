@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase"
 import { notFound } from "next/navigation"
-import { Heart } from "lucide-react"
 import { getIconForUrl } from "@/components/social-icons"
+import { SpotifyPlayer } from "@/components/spotify-player"
 
 type Props = {
   params: Promise<{ username: string }>
@@ -139,7 +139,10 @@ export default async function PublicProfile({ params }: Props) {
               rel="noopener noreferrer"
               className="group flex items-center justify-between p-5 bg-zinc-900/60 backdrop-blur-xl border border-zinc-700 hover:border-[var(--accent)] rounded-2xl shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer"
             >
-              <span className="font-bold text-lg text-white group-hover:text-[var(--accent)] transition-colors">
+              <span
+                className="font-bold text-lg transition-colors group-hover:text-[var(--accent)]"
+                style={{ color: themeColor === '#ffffff' ? '#000000' : '#ffffff' }}
+              >
                 {link.title}
               </span>
               {getIconForUrl(link.url, "w-5 h-5 text-zinc-400 group-hover:text-[var(--accent)] transition-colors")}
@@ -148,18 +151,7 @@ export default async function PublicProfile({ params }: Props) {
         </div>
 
         {profile.audio_url && profile.audio_url.includes("spotify.com") && (
-          <div className="w-full mt-8 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            <iframe 
-              style={{ borderRadius: '16px' }} 
-              src={profile.audio_url.split('?')[0].replace("/track/", "/embed/track/")} 
-              width="100%" 
-              height="152" 
-              frameBorder="0" 
-              allowFullScreen={false} 
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-              loading="lazy"
-            />
-          </div>
+          <SpotifyPlayer audioUrl={profile.audio_url} />
         )}
       </div>
       

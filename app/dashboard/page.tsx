@@ -189,6 +189,7 @@ export default function Dashboard() {
         :root {
           --accent: ${profile.theme_color || '#8b5cf6'};
           --accent-glow: ${profile.theme_color || '#8b5cf6'}80;
+          --btn-text: ${profile.theme_color === '#ffffff' ? '#000000' : '#ffffff'};
         }
       `}} />
 
@@ -243,35 +244,29 @@ export default function Dashboard() {
         <div className="flex flex-wrap gap-2 mb-8 bg-zinc-900/50 p-2 rounded-2xl border border-[var(--card-border)] w-fit relative z-10">
           <button 
             onClick={() => setActiveTab("links")}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all cursor-pointer ${activeTab === 'links' ? profile?.theme_color === "#ffffff" ? "bg-white text-black shadow-lg" : "bg-white text-black shadow-lg" : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all cursor-pointer ${activeTab === 'links' ? 'bg-[var(--accent)] shadow-lg' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+            style={activeTab === 'links' ? { color: 'var(--btn-text)' } : {}}
           >
             <Link2 className="w-5 h-5" /> Links
           </button>
           <button
             onClick={() => setActiveTab("appearance")}
-            className={`flex-1 py-3 px-6 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
-              activeTab === "appearance" 
-                ? profile?.theme_color === "#ffffff" ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.5)]" : "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]" 
-                : "text-zinc-400 hover:bg-white/5 hover:text-white"
-            }`}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all cursor-pointer ${activeTab === 'appearance' ? 'bg-[var(--accent)] shadow-lg' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+            style={activeTab === 'appearance' ? { color: 'var(--btn-text)' } : {}}
           >
-            <PaintBucket className="w-5 h-5" />
-            Appearance
+            <PaintBucket className="w-5 h-5" /> Appearance
           </button>
           <button
             onClick={() => setActiveTab("analytics")}
-            className={`flex-1 py-3 px-6 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
-              activeTab === "analytics" 
-                ? profile?.theme_color === "#ffffff" ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.5)]" : "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]" 
-                : "text-zinc-400 hover:bg-white/5 hover:text-white"
-            }`}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all cursor-pointer ${activeTab === 'analytics' ? 'bg-[var(--accent)] shadow-lg' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+            style={activeTab === 'analytics' ? { color: 'var(--btn-text)' } : {}}
           >
-            <BarChart3 className="w-5 h-5" />
-            Analytics
+            <BarChart3 className="w-5 h-5" /> Analytics
           </button>
           <button 
             onClick={() => setActiveTab("monetize")}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all cursor-pointer ${activeTab === 'monetize' ? profile?.theme_color === "#ffffff" ? "bg-white text-black shadow-lg" : 'bg-white text-black shadow-lg' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all cursor-pointer ${activeTab === 'monetize' ? 'bg-[var(--accent)] shadow-lg' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+            style={activeTab === 'monetize' ? { color: 'var(--btn-text)' } : {}}
           >
             <DollarSign className="w-5 h-5" /> Monetize
           </button>
@@ -293,7 +288,8 @@ export default function Dashboard() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setShowAddForm(true)}
-                  className="w-full bg-[var(--accent)] text-white py-5 rounded-2xl font-bold transition-colors mb-12 shadow-[0_0_20px_var(--accent-glow)] flex items-center justify-center gap-2 cursor-pointer hover:opacity-90"
+                  className="w-full bg-[var(--accent)] py-5 rounded-2xl font-bold transition-colors mb-12 shadow-[0_0_20px_var(--accent-glow)] flex items-center justify-center gap-2 cursor-pointer hover:opacity-90"
+                  style={{ color: 'var(--btn-text)' }}
                 >
                   <Plus className="w-6 h-6" /> Add New Link
                 </motion.button>
@@ -347,6 +343,69 @@ export default function Dashboard() {
                 <h2 className="text-2xl font-extrabold text-white mb-6">Theme Profile</h2>
                 
                 <div className="space-y-6">
+                  {/* Profile Identity */}
+                  <div className="pb-6 border-b border-zinc-800">
+                    <h3 className="text-sm font-semibold text-zinc-300 mb-4">Profile Identity</h3>
+                    <div className="flex items-center gap-6">
+                      {/* Avatar preview */}
+                      <div className="relative flex-shrink-0">
+                        {profile.avatar_url ? (
+                          <img
+                            src={profile.avatar_url}
+                            alt="Avatar"
+                            className="w-20 h-20 rounded-full border-4 object-cover"
+                            style={{ borderColor: 'var(--accent)' }}
+                          />
+                        ) : (
+                          <div className="w-20 h-20 bg-zinc-800 rounded-full border-4 border-zinc-700 flex items-center justify-center text-2xl font-bold text-zinc-400">
+                            {profile.display_name?.[0]?.toUpperCase() || "?"}
+                          </div>
+                        )}
+                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[var(--accent)] rounded-full flex items-center justify-center shadow-lg">
+                          <svg className="w-3 h-3" style={{ color: 'var(--btn-text)' }} fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
+                        </div>
+                      </div>
+
+                      <div className="flex-1 space-y-3">
+                        {/* Display Name */}
+                        <div>
+                          <label className="block text-xs font-semibold text-zinc-400 mb-1">Display Name</label>
+                          <input
+                            type="text"
+                            value={profile.display_name || ""}
+                            onChange={e => handleUpdateAppearance({ display_name: e.target.value })}
+                            className="w-full px-3 py-2 bg-zinc-900/50 border border-zinc-700 rounded-xl focus:ring-2 focus:ring-[var(--accent)] outline-none text-white placeholder-zinc-600 transition-shadow text-sm"
+                            placeholder="Your Name"
+                          />
+                        </div>
+                        {/* Bio */}
+                        <div>
+                          <label className="block text-xs font-semibold text-zinc-400 mb-1">Bio</label>
+                          <input
+                            type="text"
+                            value={profile.bio || ""}
+                            onChange={e => handleUpdateAppearance({ bio: e.target.value })}
+                            className="w-full px-3 py-2 bg-zinc-900/50 border border-zinc-700 rounded-xl focus:ring-2 focus:ring-[var(--accent)] outline-none text-white placeholder-zinc-600 transition-shadow text-sm"
+                            placeholder="A short bio..."
+                          />
+                        </div>
+                        {/* Avatar URL */}
+                        <div>
+                          <label className="block text-xs font-semibold text-zinc-400 mb-1">Profile Picture URL</label>
+                          <input
+                            type="url"
+                            value={profile.avatar_url || ""}
+                            onChange={e => handleUpdateAppearance({ avatar_url: e.target.value })}
+                            className="w-full px-3 py-2 bg-zinc-900/50 border border-zinc-700 rounded-xl focus:ring-2 focus:ring-[var(--accent)] outline-none text-white placeholder-zinc-600 transition-shadow text-sm"
+                            placeholder="https://... (direct image link)"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Theme Color */}
                   <div>
                     <label className="block text-sm font-semibold text-zinc-300 mb-3">Accent Color</label>
@@ -385,9 +444,10 @@ export default function Dashboard() {
                             profile.particle_effect === effect 
                               ? profile.theme_color === "#ffffff" 
                                 ? "bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.5)]" 
-                                : "bg-[var(--accent)] text-white shadow-[0_0_15px_var(--accent-glow)]" 
+                                : "bg-[var(--accent)] shadow-[0_0_15px_var(--accent-glow)]" 
                               : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800"
                           }`}
+                          style={profile.particle_effect === effect ? { color: 'var(--btn-text)' } : {}}
                         >
                           {effect.charAt(0).toUpperCase() + effect.slice(1)}
                         </button>
@@ -403,9 +463,10 @@ export default function Dashboard() {
                       value={profile.audio_url || ""}
                       onChange={e => handleUpdateAppearance({ audio_url: e.target.value })}
                       className="w-full px-4 py-3 bg-zinc-900/50 border border-zinc-700 rounded-xl focus:ring-2 focus:ring-[var(--accent)] outline-none text-white placeholder-zinc-600 transition-shadow"
-                      placeholder="Spotify embed link or raw mp3"
+                      placeholder="Spotify track link (e.g. https://open.spotify.com/track/...)"
                     />
                   </div>
+
                 </div>
               </div>
             </motion.div>

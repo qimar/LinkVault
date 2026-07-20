@@ -12,6 +12,7 @@ export type Profile = {
   custom_cursor: string | null
   audio_url: string | null
   stripe_account_id: string | null
+  views: number | null
   created_at: string
 }
 
