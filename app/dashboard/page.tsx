@@ -27,6 +27,8 @@ export default function Dashboard() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [links, setLinks] = useState<Link[]>([])
   const [analyticsData, setAnalyticsData] = useState<any[]>([])
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [resolvingAvatar, setResolvingAvatar] = useState(false)
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [usernameInput, setUsernameInput] = useState("")
@@ -160,6 +162,33 @@ export default function Dashboard() {
       const { error } = await updateAppearanceAction(id, toSave)
       if (error) alert("Failed to save appearance: " + error)
     }, 700)
+  }
+
+  // Smart avatar URL handler — resolves Pinterest/social URLs to direct image URLs
+  const handleAvatarUrlChange = async (rawUrl: string) => {
+    // Always update the input field immediately
+    handleUpdateAppearance({ avatar_url: rawUrl })
+
+    if (!rawUrl) return
+
+    // Check if it's already a direct image URL
+    const DIRECT_IMAGE = /\.(jpg|jpeg|png|webp|gif|svg|avif)(\?.*)?$/i
+    try {
+      const parsed = new URL(rawUrl)
+      if (DIRECT_IMAGE.test(parsed.pathname)) return // already direct, no need to resolve
+    } catch { return }
+
+    // Resolve social/Pinterest/other page URLs to their og:image
+    setResolvingAvatar(true)
+    try {
+      const res = await fetch(`/api/resolve-image?url=${encodeURIComponent(rawUrl)}`)
+      const json = await res.json()
+      if (json.imageUrl && json.imageUrl !== rawUrl) {
+        handleUpdateAppearance({ avatar_url: json.imageUrl })
+      }
+    } catch { /* silent — keep original URL */ } finally {
+      setResolvingAvatar(false)
+    }
   }
 
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center text-foreground">Loading...</div>
@@ -398,14 +427,18 @@ export default function Dashboard() {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-semibold text-zinc-400 mb-1">Or paste a Picture URL</label>
+                          <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                            Profile Picture URL
+                            {resolvingAvatar && <span className="ml-2 text-[var(--accent)] animate-pulse">Resolving image...</span>}
+                          </label>
                           <input
-                            type="url"
+                            type="text"
                             value={profile.avatar_url || ""}
-                            onChange={e => handleUpdateAppearance({ avatar_url: e.target.value })}
+                            onChange={e => handleAvatarUrlChange(e.target.value)}
                             className="w-full px-3 py-2 bg-zinc-900/50 border border-zinc-700 rounded-xl focus:ring-2 focus:ring-[var(--accent)] outline-none text-white placeholder-zinc-600 transition-shadow text-sm"
-                            placeholder="https://... (direct image link)"
+                            placeholder="Direct image URL, Pinterest link, or any page with an image..."
                           />
+                          <p className="text-xs text-zinc-600 mt-1">Supports direct images, Pinterest pins, and most social pages</p>
                         </div>
                       </div>
                     </div>
