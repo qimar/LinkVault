@@ -243,25 +243,35 @@ export default function Dashboard() {
         <div className="flex flex-wrap gap-2 mb-8 bg-zinc-900/50 p-2 rounded-2xl border border-[var(--card-border)] w-fit relative z-10">
           <button 
             onClick={() => setActiveTab("links")}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all cursor-pointer ${activeTab === 'links' ? 'bg-white text-black shadow-lg' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all cursor-pointer ${activeTab === 'links' ? profile?.theme_color === "#ffffff" ? "bg-white text-black shadow-lg" : "bg-white text-black shadow-lg" : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
           >
             <Link2 className="w-5 h-5" /> Links
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab("appearance")}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all cursor-pointer ${activeTab === 'appearance' ? 'bg-white text-black shadow-lg' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+            className={`flex-1 py-3 px-6 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+              activeTab === "appearance" 
+                ? profile?.theme_color === "#ffffff" ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.5)]" : "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]" 
+                : "text-zinc-400 hover:bg-white/5 hover:text-white"
+            }`}
           >
-            <PaintBucket className="w-5 h-5" /> Appearance
+            <PaintBucket className="w-5 h-5" />
+            Appearance
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab("analytics")}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all cursor-pointer ${activeTab === 'analytics' ? 'bg-white text-black shadow-lg' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+            className={`flex-1 py-3 px-6 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+              activeTab === "analytics" 
+                ? profile?.theme_color === "#ffffff" ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.5)]" : "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]" 
+                : "text-zinc-400 hover:bg-white/5 hover:text-white"
+            }`}
           >
-            <BarChart3 className="w-5 h-5" /> Analytics
+            <BarChart3 className="w-5 h-5" />
+            Analytics
           </button>
           <button 
             onClick={() => setActiveTab("monetize")}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all cursor-pointer ${activeTab === 'monetize' ? 'bg-white text-black shadow-lg' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all cursor-pointer ${activeTab === 'monetize' ? profile?.theme_color === "#ffffff" ? "bg-white text-black shadow-lg" : 'bg-white text-black shadow-lg' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
           >
             <DollarSign className="w-5 h-5" /> Monetize
           </button>
@@ -364,7 +374,6 @@ export default function Dashboard() {
                     />
                   </div>
 
-                  {/* Particle Effects */}
                   <div className="pt-4 border-t border-zinc-800">
                     <label className="block text-sm font-semibold text-zinc-300 mb-3">Particle Effects</label>
                     <div className="grid grid-cols-3 gap-4">
@@ -372,7 +381,13 @@ export default function Dashboard() {
                         <button
                           key={effect}
                           onClick={() => handleUpdateAppearance({ particle_effect: effect })}
-                          className={`py-3 px-4 rounded-xl font-bold cursor-pointer transition-colors ${profile.particle_effect === effect ? 'bg-[var(--accent)] text-white shadow-[0_0_15px_var(--accent-glow)]' : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800'}`}
+                          className={`py-3 px-4 rounded-xl font-bold cursor-pointer transition-all ${
+                            profile.particle_effect === effect 
+                              ? profile.theme_color === "#ffffff" 
+                                ? "bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.5)]" 
+                                : "bg-[var(--accent)] text-white shadow-[0_0_15px_var(--accent-glow)]" 
+                              : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800"
+                          }`}
                         >
                           {effect.charAt(0).toUpperCase() + effect.slice(1)}
                         </button>
