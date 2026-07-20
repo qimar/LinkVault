@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase"
 import { notFound } from "next/navigation"
 import { getIconForUrl } from "@/components/social-icons"
 import { MediaPlayer } from "@/components/media-player"
+import { AvatarImage } from "@/components/avatar-image"
 
 type Props = {
   params: Promise<{ username: string }>
@@ -112,18 +113,13 @@ export default async function PublicProfile({ params }: Props) {
       )}
 
       <div className="w-full max-w-lg flex flex-col items-center relative z-10 animate-fade-in-up">
-        {profile.avatar_url ? (
-          <img 
-            src={profile.avatar_url} 
-            alt={profile.display_name || profile.username} 
-            className="w-28 h-28 rounded-full mb-6 border-4 border-[var(--accent)] object-cover"
-            style={{ boxShadow: `0 0 40px var(--accent-glow)` }}
-          />
-        ) : (
-          <div className="w-28 h-28 bg-zinc-800 rounded-full mb-6 border-4 border-zinc-700 shadow-2xl flex items-center justify-center text-3xl font-bold text-zinc-500">
-            {profile.display_name?.[0]?.toUpperCase() || profile.username[0].toUpperCase()}
-          </div>
-        )}
+        <AvatarImage
+          avatarUrl={profile.avatar_url}
+          displayName={profile.display_name}
+          username={profile.username}
+          size="lg"
+          accentColor={themeColor}
+        />
         
         <h1 className="text-3xl font-extrabold text-white mb-3 text-center drop-shadow-lg">{profile.display_name || `@${profile.username}`}</h1>
         {profile.bio && (

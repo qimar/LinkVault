@@ -10,18 +10,25 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
-  // Attempt to log the click. 
-  // We use a try/catch so if the ISP blocks the local connection, 
-  // it doesn't crash the redirect and the user still gets to the link.
+  // Log the click — fetch profile_id from the link first
+  // so the clicks table FK constraint doesn't reject the insert
   try {
-    await supabase.from('clicks').insert({
-      link_id: linkId,
-      // the profile_id is ideally grabbed from the link record but for simplicity we log it
-    })
+    const { data: linkData } = await supabase
+      .from('links')
+      .select('profile_id')
+      .eq('id', linkId)
+      .single()
+
+    if (linkData?.profile_id) {
+      await supabase.from('clicks').insert({
+        link_id: linkId,
+        profile_id: linkData.profile_id,
+      })
+    }
   } catch (error) {
-    console.error("Failed to log click", error)
+    console.error("Failed to log click:", error)
   }
 
-  // Redirect the user to the destination URL
+  // Always redirect even if click logging fails
   return NextResponse.redirect(url)
 }

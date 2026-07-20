@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { SortableList } from "@/components/sortable-list"
 import { LinkForm } from "@/components/link-form"
 import type { Link, Profile } from "@/types"
+import { AvatarImage } from "@/components/avatar-image"
 import { 
   fetchDashboardDataAction, 
   createProfileAction, 
@@ -251,11 +252,12 @@ export default function Dashboard() {
         >
           <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--accent-glow)] rounded-full mix-blend-screen filter blur-[100px] opacity-20 pointer-events-none" />
           
-          {profile.avatar_url ? (
-            <img src={profile.avatar_url} alt="Avatar" className="w-24 h-24 rounded-full border-4 border-[var(--accent)] relative z-10" />
-          ) : (
-            <div className="w-24 h-24 bg-zinc-800 rounded-full border-4 border-zinc-700 relative z-10" />
-          )}
+          <AvatarImage
+            avatarUrl={profile.avatar_url}
+            displayName={profile.display_name}
+            username={profile.username}
+            size="sm"
+          />
           <div className="relative z-10">
             <h1 className="text-3xl font-extrabold text-white mb-1">{profile.display_name}</h1>
             <a href={`/${profile.username}`} target="_blank" className="text-[var(--accent)] font-medium hover:underline flex items-center gap-1 cursor-pointer">
@@ -373,18 +375,12 @@ export default function Dashboard() {
                     <div className="flex items-start gap-6">
                       {/* Avatar preview + upload */}
                       <div className="flex flex-col items-center gap-3 flex-shrink-0">
-                        {profile.avatar_url ? (
-                          <img
-                            src={profile.avatar_url}
-                            alt="Avatar"
-                            className="w-20 h-20 rounded-full border-4 object-cover"
-                            style={{ borderColor: 'var(--accent)' }}
-                          />
-                        ) : (
-                          <div className="w-20 h-20 bg-zinc-800 rounded-full border-4 border-zinc-700 flex items-center justify-center text-2xl font-bold text-zinc-400">
-                            {profile.display_name?.[0]?.toUpperCase() || "?"}
-                          </div>
-                        )}
+                        <AvatarImage
+                          avatarUrl={profile.avatar_url}
+                          displayName={profile.display_name}
+                          username={profile.username}
+                          size="sm"
+                        />
                         {/* Hidden file input */}
                         <input
                           ref={avatarFileRef}
