@@ -119,7 +119,6 @@ function SharedPlayerUI({ title, image, accent, badge, playing, currentTime, dur
         {/* Controls */}
         <div className="flex-1 min-w-0">
           <p className="text-white font-bold text-sm truncate mb-0.5">{title || "Now Playing"}</p>
-          <div className="mb-2">{badge}</div>
 
           {/* Seekbar */}
           <div
