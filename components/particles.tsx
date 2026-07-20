@@ -75,6 +75,7 @@ export function Particles({
         antialias: true,
         alpha: true,
       });
+      renderer.setClearColor(0x000000, 0); // fully transparent background
       renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(window.innerWidth, window.innerHeight);
       container.appendChild(renderer.domElement);

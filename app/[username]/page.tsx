@@ -86,10 +86,6 @@ export default async function PublicProfile({ params }: Props) {
           --accent: ${themeColor};
           --accent-glow: ${themeColor}80;
         }
-        @keyframes snow {
-          0% { transform: translateY(-100%); }
-          100% { transform: translateY(100%); }
-        }
       `}} />
 
       {profile.bg_image_url && <div className="absolute inset-0 bg-black/60 pointer-events-none" />}
@@ -107,12 +103,7 @@ export default async function PublicProfile({ params }: Props) {
         </>
       )}
       
-      {profile.particle_effect === "stars" && (
-        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(1px 1px at 20px 30px, #ffffff, rgba(0,0,0,0)), radial-gradient(1px 1px at 40px 70px, #ffffff, rgba(0,0,0,0)), radial-gradient(1px 1px at 50px 160px, #ffffff, rgba(0,0,0,0)), radial-gradient(1px 1px at 90px 40px, #ffffff, rgba(0,0,0,0))', backgroundRepeat: 'repeat', backgroundSize: '200px 200px', animation: 'snow 10s linear infinite' }} />
-      )}
-      {profile.particle_effect === "snow" && (
-        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(2px 2px at 20px 30px, #ffffff, rgba(0,0,0,0)), radial-gradient(2px 2px at 40px 70px, #ffffff, rgba(0,0,0,0)), radial-gradient(2px 2px at 50px 160px, #ffffff, rgba(0,0,0,0))', backgroundRepeat: 'repeat', backgroundSize: '150px 150px', animation: 'snow 6s linear infinite' }} />
-      )}
+
 
       <div className="w-full max-w-lg flex flex-col items-center relative z-10 animate-fade-in-up">
         <AvatarImage
