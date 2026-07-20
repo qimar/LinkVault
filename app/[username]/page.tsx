@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase"
 import { notFound } from "next/navigation"
-import { ExternalLink, Coffee, Heart } from "lucide-react"
+import { Heart } from "lucide-react"
+import { getIconForUrl } from "@/components/social-icons"
 
 type Props = {
   params: Promise<{ username: string }>
@@ -10,7 +11,7 @@ export default async function PublicProfile({ params }: Props) {
   const resolvedParams = await params
   
   let profile = null
-  let links = []
+  let links: any[] = []
   
   try {
     const { data, error } = await supabase
@@ -37,20 +38,32 @@ export default async function PublicProfile({ params }: Props) {
         display_name: "John Doe",
         bio: "Software Developer & Designer exploring the intersection of code and aesthetics.",
         avatar_url: "https://lh3.googleusercontent.com/a/ACg8ocKk9-63wXGg8pP6kG1g_lDqW9D2Q5Y8Z6T4Qz=s96-c",
-        theme_color: "#10b981", // e.g. emerald to show it works
-        bg_image_url: "https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2000&auto=format&fit=crop", 
-        particle_effect: "stars",
-        audio_url: "https://open.spotify.com/embed/track/4cOdK2wGLETKBW3PvgPWqT",
+        theme_color: "#10b981",
+        bg_image_url: null, 
+        particle_effect: "none",
+        audio_url: null,
         stripe_account_id: "mock-stripe",
+        views: 485,
       }
       links = [
         { id: "1", title: "My Portfolio", url: "https://example.com", link_type: "url" },
-        { id: "2", title: "Twitter", url: "https://twitter.com", link_type: "url" },
-        { id: "3", title: "GitHub", url: "https://github.com", link_type: "url" },
+        { id: "2", title: "Twitter", url: "https://twitter.com/johndoe", link_type: "url" },
+        { id: "3", title: "GitHub", url: "https://github.com/johndoe", link_type: "url" },
       ]
     } else {
       notFound()
     }
+  }
+
+  // Analytics View Increment Logic
+  // Using a try-catch so it fails gracefully locally if offline/isp blocked
+  try {
+    if (profile.id !== "mock-id") {
+      // In a real app we'd debounce this or use redis, but this works for our scale
+      await supabase.rpc('increment_views', { profile_uuid: profile.id })
+    }
+  } catch (e) {
+    console.error("Failed to increment view count", e)
   }
 
   const themeColor = profile.theme_color || "#8b5cf6"
@@ -121,39 +134,17 @@ export default async function PublicProfile({ params }: Props) {
           {links.map((link) => (
             <a
               key={link.id}
-              href={link.url}
+              href={`/api/click?link_id=${link.id}&url=${encodeURIComponent(link.url)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-center justify-between p-5 bg-zinc-900/60 backdrop-blur-xl border border-zinc-700 hover:border-zinc-500 rounded-2xl shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+              className="group flex items-center justify-between p-5 bg-zinc-900/60 backdrop-blur-xl border border-zinc-700 hover:border-[var(--accent)] rounded-2xl shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer"
             >
-              <span className="font-bold text-lg text-white group-hover:opacity-80 transition-opacity">
+              <span className="font-bold text-lg text-white group-hover:text-[var(--accent)] transition-colors">
                 {link.title}
               </span>
-              <ExternalLink className="w-5 h-5 text-zinc-400 group-hover:text-white transition-colors" />
+              {getIconForUrl(link.url, "w-5 h-5 text-zinc-400 group-hover:text-[var(--accent)] transition-colors")}
             </a>
           ))}
-
-          {/* Tip Jar Block */}
-          {profile.stripe_account_id && (
-            <div className="mt-8 pt-8 border-t border-zinc-800 w-full animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-              <div className="bg-[var(--accent)]/10 border border-[var(--accent)]/30 p-6 rounded-2xl text-center backdrop-blur-md">
-                <Heart className="w-8 h-8 text-[var(--accent)] mx-auto mb-3" />
-                <h3 className="font-bold text-lg text-white mb-2">Support My Work</h3>
-                <p className="text-zinc-400 text-sm mb-4">Buy me a coffee if you enjoy my content.</p>
-                <div className="flex gap-2">
-                  <button className="flex-1 bg-[var(--accent)] text-white py-3 rounded-xl font-bold hover:brightness-110 transition-all cursor-pointer">
-                    $5
-                  </button>
-                  <button className="flex-1 bg-[var(--accent)] text-white py-3 rounded-xl font-bold hover:brightness-110 transition-all cursor-pointer">
-                    $10
-                  </button>
-                  <button className="flex-1 bg-[var(--accent)] text-white py-3 rounded-xl font-bold hover:brightness-110 transition-all cursor-pointer">
-                    Custom
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {profile.audio_url && profile.audio_url.includes("spotify.com") && (

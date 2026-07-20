@@ -8,7 +8,7 @@ import { LinkForm } from "@/components/link-form"
 import type { Link, Profile } from "@/types"
 import { supabase } from "@/lib/supabase"
 import { motion, AnimatePresence } from "framer-motion"
-import { LogOut, ExternalLink, Plus, PaintBucket, Link2, BarChart3, DollarSign } from "lucide-react"
+import { LogOut, ExternalLink, Plus, PaintBucket, Link2, BarChart3, DollarSign, Clock } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
 export default function Dashboard() {
@@ -17,6 +17,7 @@ export default function Dashboard() {
   
   const [profile, setProfile] = useState<Profile | null>(null)
   const [links, setLinks] = useState<Link[]>([])
+  const [analyticsData, setAnalyticsData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [usernameInput, setUsernameInput] = useState("")
@@ -33,7 +34,7 @@ export default function Dashboard() {
     try {
       const userId = (session?.user as any).id
       
-      const { data: profileData, error } = await supabase
+      const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", userId)
@@ -48,6 +49,19 @@ export default function Dashboard() {
           .order("position", { ascending: true })
           
         if (linksData) setLinks(linksData)
+
+        // Try fetching real clicks
+        const { data: clicksData } = await supabase
+          .from("clicks")
+          .select("*")
+          
+        // Build chart data dynamically (super basic daily aggregation)
+        // If no data exists yet, we just show a flatline
+        const chart = [
+          { name: 'Today', views: profileData.views || 0, clicks: clicksData?.length || 0 }
+        ]
+        setAnalyticsData(chart)
+        setLoading(false)
         return
       }
     } catch (e) {
@@ -70,12 +84,13 @@ export default function Dashboard() {
       audio_url: null,
       stripe_account_id: null,
       created_at: new Date().toISOString()
-    })
+    } as any)
     setLinks([
       { id: "1", profile_id: "mock-id", title: "My Portfolio", url: "https://example.com", link_type: "url", position: 0, created_at: new Date().toISOString() },
       { id: "2", profile_id: "mock-id", title: "Twitter", url: "https://twitter.com", link_type: "url", position: 1, created_at: new Date().toISOString() },
       { id: "3", profile_id: "mock-id", title: "GitHub", url: "https://github.com", link_type: "url", position: 2, created_at: new Date().toISOString() },
     ])
+    setAnalyticsData([{ name: 'Today', views: 0, clicks: 0 }])
     setLoading(false)
   }
 
@@ -89,6 +104,7 @@ export default function Dashboard() {
         username: usernameInput.toLowerCase().replace(/[^a-z0-9]/g, ""),
         display_name: session?.user?.name,
         avatar_url: session?.user?.image,
+        views: 0
       })
       .select()
       .single()
@@ -102,7 +118,7 @@ export default function Dashboard() {
 
   const handleAddLink = async (data: { title: string, url: string }) => {
     if (!profile) return
-    const { data: newLink, error } = await supabase
+    const { data: newLink } = await supabase
       .from("links")
       .insert({
         profile_id: profile.id,
@@ -156,21 +172,10 @@ export default function Dashboard() {
   const handleUpdateAppearance = async (updates: Partial<Profile>) => {
     if (!profile) return
     const newProfile = { ...profile, ...updates }
-    setProfile(newProfile)
+    setProfile(newProfile as any)
     
     await supabase.from("profiles").update(updates).eq("id", profile.id)
   }
-
-  // Mock Analytics Data
-  const mockAnalyticsData = [
-    { name: 'Mon', views: 40, clicks: 24 },
-    { name: 'Tue', views: 30, clicks: 13 },
-    { name: 'Wed', views: 60, clicks: 48 },
-    { name: 'Thu', views: 45, clicks: 28 },
-    { name: 'Fri', views: 90, clicks: 68 },
-    { name: 'Sat', views: 120, clicks: 88 },
-    { name: 'Sun', views: 100, clicks: 70 },
-  ]
 
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center text-foreground">Loading...</div>
 
@@ -231,7 +236,7 @@ export default function Dashboard() {
             whileTap={{ scale: 0.95 }}
             href={`/${profile.username}`} 
             target="_blank" 
-            className="text-sm font-semibold text-zinc-300 hover:text-white flex items-center gap-2 px-4 py-2 bg-zinc-900 rounded-full border border-zinc-800 cursor-pointer"
+            className="text-sm font-semibold text-zinc-300 hover:text-white flex items-center gap-2 px-4 py-2 bg-zinc-900 rounded-full border border-zinc-800 cursor-pointer hover:border-[var(--accent)] transition-colors"
           >
             Live View <ExternalLink className="w-4 h-4" />
           </motion.a>
@@ -250,14 +255,16 @@ export default function Dashboard() {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 bg-[var(--card-bg)] backdrop-blur-md p-8 rounded-3xl border border-[var(--card-border)] shadow-xl flex items-center gap-6"
+          className="mb-8 bg-[var(--card-bg)] backdrop-blur-md p-8 rounded-3xl border border-[var(--card-border)] shadow-xl flex items-center gap-6 relative overflow-hidden"
         >
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--accent-glow)] rounded-full mix-blend-screen filter blur-[100px] opacity-20 pointer-events-none" />
+          
           {profile.avatar_url ? (
-            <img src={profile.avatar_url} alt="Avatar" className="w-24 h-24 rounded-full border-4 border-[var(--accent)]" />
+            <img src={profile.avatar_url} alt="Avatar" className="w-24 h-24 rounded-full border-4 border-[var(--accent)] relative z-10" />
           ) : (
-            <div className="w-24 h-24 bg-zinc-800 rounded-full border-4 border-zinc-700" />
+            <div className="w-24 h-24 bg-zinc-800 rounded-full border-4 border-zinc-700 relative z-10" />
           )}
-          <div>
+          <div className="relative z-10">
             <h1 className="text-3xl font-extrabold text-white mb-1">{profile.display_name}</h1>
             <a href={`/${profile.username}`} target="_blank" className="text-[var(--accent)] font-medium hover:underline flex items-center gap-1 cursor-pointer">
               linkvault.com/{profile.username}
@@ -266,7 +273,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Tab Navigation */}
-        <div className="flex flex-wrap gap-2 mb-8 bg-zinc-900/50 p-2 rounded-2xl border border-[var(--card-border)] w-fit">
+        <div className="flex flex-wrap gap-2 mb-8 bg-zinc-900/50 p-2 rounded-2xl border border-[var(--card-border)] w-fit relative z-10">
           <button 
             onClick={() => setActiveTab("links")}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all cursor-pointer ${activeTab === 'links' ? 'bg-white text-black shadow-lg' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
@@ -367,11 +374,11 @@ export default function Dashboard() {
                   <div>
                     <label className="block text-sm font-semibold text-zinc-300 mb-3">Accent Color</label>
                     <div className="flex gap-3">
-                      {["#8b5cf6", "#3b82f6", "#10b981", "#ef4444", "#f59e0b", "#ec4899", "#ffffff", "#000000"].map(color => (
+                      {["#8b5cf6", "#3b82f6", "#10b981", "#ef4444", "#f59e0b", "#ec4899", "#ffffff"].map(color => (
                         <button
                           key={color}
                           onClick={() => handleUpdateAppearance({ theme_color: color })}
-                          className={`w-12 h-12 rounded-full cursor-pointer transition-transform ${profile.theme_color === color ? 'scale-110 ring-4 ring-white/20' : 'hover:scale-105'} border border-zinc-700`}
+                          className={`w-12 h-12 rounded-full cursor-pointer transition-transform ${profile.theme_color === color ? 'scale-110 ring-4 ring-white/20 shadow-lg' : 'hover:scale-105'} border border-zinc-700`}
                           style={{ backgroundColor: color }}
                         />
                       ))}
@@ -385,7 +392,7 @@ export default function Dashboard() {
                       type="url"
                       value={profile.bg_image_url || ""}
                       onChange={e => handleUpdateAppearance({ bg_image_url: e.target.value })}
-                      className="w-full px-4 py-3 bg-zinc-900/50 border border-zinc-700 rounded-xl focus:ring-2 focus:ring-[var(--accent)] outline-none text-white placeholder-zinc-600"
+                      className="w-full px-4 py-3 bg-zinc-900/50 border border-zinc-700 rounded-xl focus:ring-2 focus:ring-[var(--accent)] outline-none text-white placeholder-zinc-600 transition-shadow"
                       placeholder="https://..."
                     />
                   </div>
@@ -398,7 +405,7 @@ export default function Dashboard() {
                         <button
                           key={effect}
                           onClick={() => handleUpdateAppearance({ particle_effect: effect })}
-                          className={`py-3 px-4 rounded-xl font-bold cursor-pointer transition-colors ${profile.particle_effect === effect ? 'bg-[var(--accent)] text-white' : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800'}`}
+                          className={`py-3 px-4 rounded-xl font-bold cursor-pointer transition-colors ${profile.particle_effect === effect ? 'bg-[var(--accent)] text-white shadow-[0_0_15px_var(--accent-glow)]' : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800'}`}
                         >
                           {effect.charAt(0).toUpperCase() + effect.slice(1)}
                         </button>
@@ -413,7 +420,7 @@ export default function Dashboard() {
                       type="url"
                       value={profile.audio_url || ""}
                       onChange={e => handleUpdateAppearance({ audio_url: e.target.value })}
-                      className="w-full px-4 py-3 bg-zinc-900/50 border border-zinc-700 rounded-xl focus:ring-2 focus:ring-[var(--accent)] outline-none text-white placeholder-zinc-600"
+                      className="w-full px-4 py-3 bg-zinc-900/50 border border-zinc-700 rounded-xl focus:ring-2 focus:ring-[var(--accent)] outline-none text-white placeholder-zinc-600 transition-shadow"
                       placeholder="Spotify embed link or raw mp3"
                     />
                   </div>
@@ -433,11 +440,11 @@ export default function Dashboard() {
             >
               <div className="bg-[var(--card-bg)] backdrop-blur-md p-8 rounded-3xl border border-[var(--card-border)] shadow-xl">
                 <h2 className="text-2xl font-extrabold text-white mb-2">Analytics Overview</h2>
-                <p className="text-zinc-400 mb-8">Track your audience engagement over the last 7 days.</p>
+                <p className="text-zinc-400 mb-8">Real-time data from your live profile.</p>
                 
                 <div className="h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={mockAnalyticsData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                    <LineChart data={analyticsData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                       <XAxis dataKey="name" stroke="#71717a" />
                       <YAxis stroke="#71717a" />
@@ -449,12 +456,14 @@ export default function Dashboard() {
                 </div>
 
                 <div className="mt-8 grid grid-cols-2 gap-4">
-                  <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800 text-center">
-                    <div className="text-4xl font-extrabold text-white mb-1">485</div>
+                  <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800 text-center relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-[var(--accent-glow)] opacity-0 group-hover:opacity-10 transition-opacity" />
+                    <div className="text-4xl font-extrabold text-white mb-1">{analyticsData[0]?.views || 0}</div>
                     <div className="text-zinc-500 font-medium">Total Views</div>
                   </div>
-                  <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800 text-center">
-                    <div className="text-4xl font-extrabold text-white mb-1">291</div>
+                  <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800 text-center relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-[var(--accent-glow)] opacity-0 group-hover:opacity-10 transition-opacity" />
+                    <div className="text-4xl font-extrabold text-white mb-1">{analyticsData[0]?.clicks || 0}</div>
                     <div className="text-zinc-500 font-medium">Total Clicks</div>
                   </div>
                 </div>
@@ -471,25 +480,21 @@ export default function Dashboard() {
               transition={{ duration: 0.2 }}
               className="space-y-6"
             >
-              <div className="bg-[var(--card-bg)] backdrop-blur-md p-8 rounded-3xl border border-[var(--card-border)] shadow-xl text-center">
-                <div className="w-16 h-16 bg-[var(--accent)]/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <DollarSign className="w-8 h-8 text-[var(--accent)]" />
-                </div>
-                <h2 className="text-2xl font-extrabold text-white mb-2">Monetize Your Audience</h2>
-                <p className="text-zinc-400 mb-8 max-w-md mx-auto">Connect your Stripe account to add a "Support Me" tip jar directly to your public profile.</p>
+              <div className="bg-[var(--card-bg)] backdrop-blur-md p-12 rounded-3xl border border-[var(--card-border)] shadow-xl text-center relative overflow-hidden">
+                <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-50" />
                 
-                {profile.stripe_account_id ? (
-                  <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-4 rounded-xl font-bold">
-                    Stripe Connected successfully! Your Tip Jar is live.
-                  </div>
-                ) : (
-                  <button 
-                    onClick={() => handleUpdateAppearance({ stripe_account_id: 'mock-stripe-id-123' })}
-                    className="bg-[#635BFF] hover:bg-[#524be3] text-white font-bold py-4 px-8 rounded-full transition-all cursor-pointer shadow-lg hover:-translate-y-1"
-                  >
-                    Connect with Stripe
-                  </button>
-                )}
+                <div className="w-20 h-20 bg-zinc-900/80 rounded-full flex items-center justify-center mx-auto mb-6 border border-[var(--card-border)] shadow-[0_0_30px_var(--accent-glow)]">
+                  <Clock className="w-10 h-10 text-[var(--accent)] animate-pulse" />
+                </div>
+                <h2 className="text-3xl font-extrabold text-white mb-3 tracking-tight">Coming Soon</h2>
+                <p className="text-zinc-400 max-w-md mx-auto text-lg leading-relaxed">
+                  We are building an ultra-sleek, built-in tip jar and subscription engine so you can monetize your audience directly.
+                </p>
+                <div className="mt-8">
+                  <span className="inline-flex items-center px-4 py-2 rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/10 text-[var(--accent)] text-sm font-bold uppercase tracking-widest">
+                    In Development
+                  </span>
+                </div>
               </div>
             </motion.div>
           )}

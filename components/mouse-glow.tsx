@@ -22,7 +22,7 @@ export function MouseGlow() {
     <motion.div
       className="pointer-events-none fixed inset-0 z-0 transition-opacity duration-300"
       animate={{
-        background: `radial-gradient(600px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(139, 92, 246, 0.15), transparent 80%)`
+        background: `radial-gradient(600px circle at ${mousePosition.x}px ${mousePosition.y}px, var(--accent-glow), transparent 80%)`
       }}
     />
   )

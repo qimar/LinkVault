@@ -4,6 +4,7 @@ import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import type { Link } from "@/types"
 import { GripVertical, Pencil, Trash2 } from "lucide-react"
+import { getIconForUrl } from "./social-icons"
 
 export function LinkCard({ link, onEdit, onDelete }: { link: Link, onEdit: (l: Link) => void, onDelete: (id: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link.id })
@@ -24,9 +25,14 @@ export function LinkCard({ link, onEdit, onDelete }: { link: Link, onEdit: (l: L
         <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-2 text-zinc-600 hover:text-white transition-colors bg-zinc-900/50 rounded-lg">
           <GripVertical className="w-5 h-5" />
         </div>
-        <div className="overflow-hidden">
-          <h3 className="font-bold text-white truncate text-lg">{link.title}</h3>
-          <p className="text-sm text-zinc-400 truncate">{link.url}</p>
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="bg-zinc-900 p-2 rounded-xl border border-zinc-800 text-zinc-400 group-hover:text-white transition-colors">
+            {getIconForUrl(link.url, "w-5 h-5")}
+          </div>
+          <div className="overflow-hidden">
+            <h3 className="font-bold text-white truncate text-lg">{link.title}</h3>
+            <p className="text-sm text-zinc-400 truncate">{link.url}</p>
+          </div>
         </div>
       </div>
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
