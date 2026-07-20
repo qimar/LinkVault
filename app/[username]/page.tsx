@@ -151,7 +151,7 @@ export default async function PublicProfile({ params }: Props) {
           <div className="w-full mt-8 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             <iframe 
               style={{ borderRadius: '16px' }} 
-              src={profile.audio_url.replace("/track/", "/embed/track/")} 
+              src={profile.audio_url.split('?')[0].replace("/track/", "/embed/track/")} 
               width="100%" 
               height="152" 
               frameBorder="0" 
