@@ -31,8 +31,11 @@ export default function Dashboard() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [usernameInput, setUsernameInput] = useState("")
   const [activeTab, setActiveTab] = useState<"links" | "appearance" | "analytics" | "monetize">("links")
-  const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  const avatarFileRef = useRef<HTMLInputElement>(null)
+
+  // Debounce refs for appearance saves — prevents text-field reversion bug
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingUpdates = useRef<Partial<Profile>>({})
+  const profileIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/")
@@ -56,6 +59,7 @@ export default function Dashboard() {
 
       if (profileData) {
         setProfile(profileData)
+        profileIdRef.current = profileData.id
         if (linksData) setLinks(linksData)
 
         const chart = [
@@ -135,38 +139,27 @@ export default function Dashboard() {
     }
   }
 
-  const handleUpdateAppearance = async (updates: Partial<Profile>) => {
+  // Debounced appearance save — UI updates instantly, DB write fires 700ms after
+  // last keystroke. Batches rapid changes (e.g. typing) into a single DB call.
+  const handleUpdateAppearance = (updates: Partial<Profile>) => {
     if (!profile) return
-    // Optimistic update for snappy UI
-    const newProfile = { ...profile, ...updates }
-    setProfile(newProfile as any)
-    
-    const { error } = await updateAppearanceAction(profile.id, updates)
-    if (error) {
-      alert("Failed to save appearance: " + error)
-    }
-  }
 
-  const handleAvatarFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !profile) return
-    setUploadingAvatar(true)
-    try {
-      const formData = new FormData()
-      formData.append("file", file)
-      const res = await fetch("/api/upload-avatar", { method: "POST", body: formData })
-      const json = await res.json()
-      if (json.error) {
-        alert("Upload failed: " + json.error)
-      } else if (json.url) {
-        await handleUpdateAppearance({ avatar_url: json.url })
-      }
-    } catch (err: any) {
-      alert("Upload failed: " + err.message)
-    } finally {
-      setUploadingAvatar(false)
-      if (avatarFileRef.current) avatarFileRef.current.value = ""
-    }
+    // Immediate optimistic update so the input feels responsive
+    setProfile(prev => prev ? { ...prev, ...updates } : prev)
+
+    // Accumulate all changes since last save
+    pendingUpdates.current = { ...pendingUpdates.current, ...updates }
+
+    // Reset the debounce window
+    if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    debounceTimer.current = setTimeout(async () => {
+      const toSave = pendingUpdates.current
+      pendingUpdates.current = {}
+      const id = profileIdRef.current
+      if (!id) return
+      const { error } = await updateAppearanceAction(id, toSave)
+      if (error) alert("Failed to save appearance: " + error)
+    }, 700)
   }
 
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center text-foreground">Loading...</div>
@@ -373,45 +366,14 @@ export default function Dashboard() {
                   <div className="pb-6 border-b border-zinc-800">
                     <h3 className="text-sm font-semibold text-zinc-300 mb-4">Profile Identity</h3>
                     <div className="flex items-start gap-6">
-                      {/* Avatar preview + upload */}
-                      <div className="flex flex-col items-center gap-3 flex-shrink-0">
+                      {/* Avatar preview (URL only) */}
+                      <div className="flex-shrink-0">
                         <AvatarImage
                           avatarUrl={profile.avatar_url}
                           displayName={profile.display_name}
                           username={profile.username}
                           size="sm"
                         />
-                        {/* Hidden file input */}
-                        <input
-                          ref={avatarFileRef}
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp,image/gif"
-                          className="hidden"
-                          onChange={handleAvatarFileUpload}
-                        />
-                        <button
-                          onClick={() => avatarFileRef.current?.click()}
-                          disabled={uploadingAvatar}
-                          className="text-xs px-3 py-1.5 rounded-lg font-semibold transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5 border border-[var(--accent)] hover:bg-[var(--accent)]/10"
-                          style={{ color: 'var(--accent)' }}
-                        >
-                          {uploadingAvatar ? (
-                            <>
-                              <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                              </svg>
-                              Uploading...
-                            </>
-                          ) : (
-                            <>
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                              </svg>
-                              Upload Photo
-                            </>
-                          )}
-                        </button>
                       </div>
 
                       <div className="flex-1 space-y-3">
