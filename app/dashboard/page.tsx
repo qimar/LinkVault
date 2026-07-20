@@ -6,7 +6,15 @@ import { useRouter } from "next/navigation"
 import { SortableList } from "@/components/sortable-list"
 import { LinkForm } from "@/components/link-form"
 import type { Link, Profile } from "@/types"
-import { supabase } from "@/lib/supabase"
+import { 
+  fetchDashboardDataAction, 
+  createProfileAction, 
+  addLinkAction, 
+  updateLinkAction, 
+  deleteLinkAction, 
+  reorderLinksAction, 
+  updateAppearanceAction 
+} from "@/app/actions"
 import { motion, AnimatePresence } from "framer-motion"
 import { LogOut, ExternalLink, Plus, PaintBucket, Link2, BarChart3, DollarSign, Clock } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
@@ -34,46 +42,25 @@ export default function Dashboard() {
     try {
       const userId = (session?.user as any).id
       
-      const { data: profileData, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", userId)
-        .single()
+      const { profileData, linksData, clicksCount, error } = await fetchDashboardDataAction(userId)
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          // No profile found, show creation screen
-          setLoading(false)
-        } else {
-          console.error("Supabase error:", error)
-          alert("Database error: " + error.message)
-          setLoading(false)
-        }
+        console.error("Supabase error:", error)
+        alert("Database error: " + error)
+        setLoading(false)
         return
       }
 
       if (profileData) {
         setProfile(profileData)
-        const { data: linksData } = await supabase
-          .from("links")
-          .select("*")
-          .eq("profile_id", profileData.id)
-          .order("position", { ascending: true })
-          
         if (linksData) setLinks(linksData)
 
-        // Try fetching real clicks
-        const { data: clicksData } = await supabase
-          .from("clicks")
-          .select("*")
-          
         const chart = [
-          { name: 'Today', views: profileData.views || 0, clicks: clicksData?.length || 0 }
+          { name: 'Today', views: profileData.views || 0, clicks: clicksCount || 0 }
         ]
         setAnalyticsData(chart)
-        setLoading(false)
-        return
       }
+      setLoading(false)
     } catch (e) {
       console.error("Failed to load data:", e)
       setLoading(false)
@@ -83,20 +70,12 @@ export default function Dashboard() {
   const handleCreateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    const { data, error } = await supabase
-      .from("profiles")
-      .insert({
-        user_id: (session?.user as any).id,
-        username: usernameInput.toLowerCase().replace(/[^a-z0-9]/g, ""),
-        display_name: session?.user?.name,
-        avatar_url: session?.user?.image,
-        views: 0
-      })
-      .select()
-      .single()
+    const userId = (session?.user as any).id
+    const username = usernameInput.toLowerCase().replace(/[^a-z0-9]/g, "")
+    const { data, error } = await createProfileAction(userId, username, session?.user?.name, session?.user?.image)
       
     if (error) {
-      alert("Failed to create profile: " + error.message)
+      alert("Failed to create profile: " + error)
       return
     }
     
@@ -105,21 +84,12 @@ export default function Dashboard() {
     }
   }
 
-  const handleAddLink = async (data: { title: string, url: string }) => {
+  const handleAddLink = async (linkData: { title: string, url: string }) => {
     if (!profile) return
-    const { data: newLink, error } = await supabase
-      .from("links")
-      .insert({
-        profile_id: profile.id,
-        ...data,
-        link_type: "url",
-        position: links.length
-      })
-      .select()
-      .single()
+    const { data: newLink, error } = await addLinkAction(profile.id, linkData.title, linkData.url, links.length)
       
     if (error) {
-      alert("Failed to add link: " + error.message)
+      alert("Failed to add link: " + error)
       return
     }
       
@@ -129,16 +99,11 @@ export default function Dashboard() {
     }
   }
 
-  const handleEditLink = async (data: { id: string, title: string, url: string }) => {
-    const { data: updated, error } = await supabase
-      .from("links")
-      .update({ title: data.title, url: data.url })
-      .eq("id", data.id)
-      .select()
-      .single()
+  const handleEditLink = async (linkData: { id: string, title: string, url: string }) => {
+    const { data: updated, error } = await updateLinkAction(linkData.id, linkData.title, linkData.url)
       
     if (error) {
-      alert("Failed to update link: " + error.message)
+      alert("Failed to update link: " + error)
       return
     }
       
@@ -148,9 +113,9 @@ export default function Dashboard() {
   }
 
   const handleDeleteLink = async (id: string) => {
-    const { error } = await supabase.from("links").delete().eq("id", id)
+    const { error } = await deleteLinkAction(id)
     if (error) {
-      alert("Failed to delete link: " + error.message)
+      alert("Failed to delete link: " + error)
       return
     }
     setLinks(links.filter(l => l.id !== id))
@@ -160,11 +125,10 @@ export default function Dashboard() {
     // Optimistic update
     setLinks(newItems)
     
-    for (const item of newItems) {
-      const { error } = await supabase.from("links").update({ position: item.position }).eq("id", item.id)
-      if (error) {
-        console.error("Failed to reorder link:", error.message)
-      }
+    const { error } = await reorderLinksAction(newItems)
+    if (error) {
+      console.error("Failed to reorder link:", error)
+      alert("Failed to reorder: " + error)
     }
   }
 
@@ -174,9 +138,9 @@ export default function Dashboard() {
     const newProfile = { ...profile, ...updates }
     setProfile(newProfile as any)
     
-    const { error } = await supabase.from("profiles").update(updates).eq("id", profile.id)
+    const { error } = await updateAppearanceAction(profile.id, updates)
     if (error) {
-      alert("Failed to save appearance: " + error.message)
+      alert("Failed to save appearance: " + error)
     }
   }
 
