@@ -3,12 +3,6 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { createClient } from "@supabase/supabase-js"
 
-// Use service role key so uploads bypass RLS
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -39,6 +33,13 @@ export async function POST(req: NextRequest) {
     const fileName = `${userId}-${Date.now()}.${ext}`
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
+
+    // Initialize admin client at request-time so build doesn't fail
+    // when env vars are not yet present
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
     const { data, error } = await supabaseAdmin.storage
       .from("avatars")
