@@ -34,11 +34,17 @@ export default function Dashboard() {
     try {
       const userId = (session?.user as any).id
       
-      const { data: profileData } = await supabase
+      const { data: profileData, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", userId)
         .single()
+
+      if (error && error.code === 'PGRST116') {
+        // No profile found, show creation screen
+        setLoading(false)
+        return
+      }
 
       if (profileData) {
         setProfile(profileData)
@@ -55,8 +61,6 @@ export default function Dashboard() {
           .from("clicks")
           .select("*")
           
-        // Build chart data dynamically (super basic daily aggregation)
-        // If no data exists yet, we just show a flatline
         const chart = [
           { name: 'Today', views: profileData.views || 0, clicks: clicksData?.length || 0 }
         ]
@@ -65,33 +69,9 @@ export default function Dashboard() {
         return
       }
     } catch (e) {
-      console.log("Network failed, using mock data for UI development.")
+      console.error("Failed to load data:", e)
+      setLoading(false)
     }
-    
-    // Fallback to mock data if no profile or connection failed
-    setProfile({
-      id: "mock-id",
-      user_id: (session?.user as any).id,
-      username: "johndoe",
-      display_name: session?.user?.name || "John Doe",
-      bio: "Software Developer & Designer",
-      avatar_url: session?.user?.image || "https://lh3.googleusercontent.com/a/ACg8ocKk9-63wXGg8pP6kG1g_lDqW9D2Q5Y8Z6T4Qz=s96-c",
-      theme_color: "#8b5cf6",
-      bg_image_url: null,
-      bg_video_url: null,
-      particle_effect: "none",
-      custom_cursor: "default",
-      audio_url: null,
-      stripe_account_id: null,
-      created_at: new Date().toISOString()
-    } as any)
-    setLinks([
-      { id: "1", profile_id: "mock-id", title: "My Portfolio", url: "https://example.com", link_type: "url", position: 0, created_at: new Date().toISOString() },
-      { id: "2", profile_id: "mock-id", title: "Twitter", url: "https://twitter.com", link_type: "url", position: 1, created_at: new Date().toISOString() },
-      { id: "3", profile_id: "mock-id", title: "GitHub", url: "https://github.com", link_type: "url", position: 2, created_at: new Date().toISOString() },
-    ])
-    setAnalyticsData([{ name: 'Today', views: 0, clicks: 0 }])
-    setLoading(false)
   }
 
   const handleCreateProfile = async (e: React.FormEvent) => {
@@ -109,16 +89,19 @@ export default function Dashboard() {
       .select()
       .single()
       
+    if (error) {
+      alert("Failed to create profile: " + error.message)
+      return
+    }
+    
     if (data) {
       setProfile(data)
-    } else {
-      alert("Username might be taken or connection failed: " + (error?.message || "Error"))
     }
   }
 
   const handleAddLink = async (data: { title: string, url: string }) => {
     if (!profile) return
-    const { data: newLink } = await supabase
+    const { data: newLink, error } = await supabase
       .from("links")
       .insert({
         profile_id: profile.id,
@@ -129,52 +112,66 @@ export default function Dashboard() {
       .select()
       .single()
       
+    if (error) {
+      alert("Failed to add link: " + error.message)
+      return
+    }
+      
     if (newLink) {
       setLinks([...links, newLink])
-      setShowAddForm(false)
-    } else {
-      setLinks([...links, { id: Math.random().toString(), profile_id: profile.id, title: data.title, url: data.url, link_type: "url", position: links.length, created_at: new Date().toISOString() }])
       setShowAddForm(false)
     }
   }
 
   const handleEditLink = async (data: { id: string, title: string, url: string }) => {
-    const { data: updated } = await supabase
+    const { data: updated, error } = await supabase
       .from("links")
       .update({ title: data.title, url: data.url })
       .eq("id", data.id)
       .select()
       .single()
       
+    if (error) {
+      alert("Failed to update link: " + error.message)
+      return
+    }
+      
     if (updated) {
       setLinks(links.map(l => l.id === updated.id ? updated : l))
-    } else {
-      setLinks(links.map(l => l.id === data.id ? { ...l, title: data.title, url: data.url } : l))
     }
   }
 
   const handleDeleteLink = async (id: string) => {
     const { error } = await supabase.from("links").delete().eq("id", id)
-    if (!error) {
-      setLinks(links.filter(l => l.id !== id))
-    } else {
-      setLinks(links.filter(l => l.id !== id))
+    if (error) {
+      alert("Failed to delete link: " + error.message)
+      return
     }
+    setLinks(links.filter(l => l.id !== id))
   }
 
   const handleReorder = async (newItems: Link[]) => {
+    // Optimistic update
     setLinks(newItems)
+    
     for (const item of newItems) {
-      await supabase.from("links").update({ position: item.position }).eq("id", item.id)
+      const { error } = await supabase.from("links").update({ position: item.position }).eq("id", item.id)
+      if (error) {
+        console.error("Failed to reorder link:", error.message)
+      }
     }
   }
 
   const handleUpdateAppearance = async (updates: Partial<Profile>) => {
     if (!profile) return
+    // Optimistic update for snappy UI
     const newProfile = { ...profile, ...updates }
     setProfile(newProfile as any)
     
-    await supabase.from("profiles").update(updates).eq("id", profile.id)
+    const { error } = await supabase.from("profiles").update(updates).eq("id", profile.id)
+    if (error) {
+      alert("Failed to save appearance: " + error.message)
+    }
   }
 
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center text-foreground">Loading...</div>
