@@ -210,6 +210,8 @@ function YouTubeAudioPlayer({ videoId, title, image, accentColor }: {
             e.target.setVolume(80)
             setDuration(e.target.getDuration() || 0)
             setLoading(false)
+            // Autoplay on load
+            e.target.playVideo()
           },
           onStateChange: (e: any) => {
             if (e.data === 1) { // PLAYING
@@ -314,6 +316,8 @@ function SoundCloudAudioPlayer({ url, title, image, accentColor }: {
         widget.getDuration((d: number) => setDuration(d / 1000))
         widget.setVolume(80)
         setLoading(false)
+        // Autoplay on load
+        widget.play()
       })
       widget.bind(window.SC.Widget.Events.PLAY, () => setPlaying(true))
       widget.bind(window.SC.Widget.Events.PAUSE, () => setPlaying(false))

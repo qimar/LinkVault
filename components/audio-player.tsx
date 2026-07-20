@@ -80,7 +80,11 @@ export function AudioPlayer({ src, title, image, accentColor = "#8b5cf6" }: Prop
         onLoadedMetadata={() => {
           setDuration(audioRef.current?.duration || 0)
           setLoading(false)
-          if (audioRef.current) audioRef.current.volume = volume
+          if (audioRef.current) {
+            audioRef.current.volume = volume
+            // Autoplay on load
+            audioRef.current.play().then(() => setPlaying(true)).catch(() => {})
+          }
         }}
         onEnded={() => setPlaying(false)}
         onWaiting={() => setLoading(true)}
