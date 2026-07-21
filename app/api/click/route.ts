@@ -36,5 +36,9 @@ export async function GET(request: Request) {
   }
 
   // Always redirect to destination even if click logging fails or is rate limited
-  return NextResponse.redirect(new URL(url))
+  const response = NextResponse.redirect(new URL(url))
+  if (!success) {
+    response.headers.set("X-RateLimit-Exceeded", "1")
+  }
+  return response
 }
