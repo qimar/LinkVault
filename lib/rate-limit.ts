@@ -9,9 +9,17 @@ function getRateLimiter() {
   initialized = true
 
   try {
-    if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    const url = process.env.UPSTASH_REDIS_REST_URL
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN
+
+    if (url && token) {
       rateLimit = new Ratelimit({
-        redis: Redis.fromEnv(),
+        // Explicitly pass credentials instead of Redis.fromEnv() 
+        // to ensure Next.js Edge runtime correctly bundles the env vars
+        redis: new Redis({
+          url: url,
+          token: token,
+        }),
         limiter: Ratelimit.slidingWindow(20, "10 s"),
         ephemeralCache: new Map(),
         analytics: true,
