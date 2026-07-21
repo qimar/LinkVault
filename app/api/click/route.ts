@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { NextResponse } from "next/server"
-import { rateLimit } from "@/lib/rate-limit"
+import { checkRateLimit } from "@/lib/rate-limit"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
   // Rate limit click tracking to prevent DB spam
   const ip = request.headers.get("x-forwarded-for") || "unknown"
-  const { success } = await rateLimit.limit(`click_${ip}`)
+  const { success } = await checkRateLimit(`click_${ip}`)
 
   // Only log the click if they haven't exceeded the rate limit
   if (success) {
@@ -36,5 +36,5 @@ export async function GET(request: Request) {
   }
 
   // Always redirect to destination even if click logging fails or is rate limited
-  return NextResponse.redirect(url)
+  return NextResponse.redirect(new URL(url))
 }

@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase-admin"
-import { rateLimit } from "@/lib/rate-limit"
+import { checkRateLimit } from "@/lib/rate-limit"
 
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get("x-forwarded-for") || "unknown"
-    const { success } = await rateLimit.limit(`upload_${ip}`)
+    const { success } = await checkRateLimit(`upload_${ip}`)
     if (!success) {
       return NextResponse.json({ error: "Too many upload requests" }, { status: 429 })
     }

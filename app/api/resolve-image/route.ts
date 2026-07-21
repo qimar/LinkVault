@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { rateLimit } from "@/lib/rate-limit"
+import { checkRateLimit } from "@/lib/rate-limit"
 
 // Direct image extensions — return the URL as-is
 const IMAGE_EXTS = /\.(jpg|jpeg|png|webp|gif|svg|avif|bmp)(\?.*)?$/i
@@ -36,7 +36,7 @@ function isSafeUrl(urlString: string) {
 export async function GET(req: NextRequest) {
   // Rate limiting by IP
   const ip = req.headers.get("x-forwarded-for") || "unknown"
-  const { success } = await rateLimit.limit(`resolve-image_${ip}`)
+  const { success } = await checkRateLimit(`resolve-image_${ip}`)
   if (!success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 })
   }
